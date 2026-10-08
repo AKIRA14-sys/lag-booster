@@ -15,7 +15,11 @@ enum class CrosshairBaseStyle {
     TRI_FORCE,
     HEXAGON_SNIPER,
     OCTAGON_TACTICAL,
-    ULTRA_COMPACT
+    ULTRA_COMPACT,
+    CUSTOM_CROSSHAIR,
+    PRO_CUSTOM_CROSSHAIR,
+    CHEVRON_CROSSHAIR,
+    CHARGING_CROSSHAIR
 }
 
 data class CrosshairPreset(

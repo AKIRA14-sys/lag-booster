@@ -118,11 +118,15 @@ object CrosshairGenerator {
         }
 
         for (i in 0 until 100) {
-            val base = when (i % 5) {
+            val base = when (i % 9) {
                 0 -> CrosshairBaseStyle.SHARINGAN_TRIPLE
                 1 -> CrosshairBaseStyle.RINNEGAN_RINGS
                 2 -> CrosshairBaseStyle.HEXAGON_SNIPER
                 3 -> CrosshairBaseStyle.OCTAGON_TACTICAL
+                4 -> CrosshairBaseStyle.CUSTOM_CROSSHAIR
+                5 -> CrosshairBaseStyle.PRO_CUSTOM_CROSSHAIR
+                6 -> CrosshairBaseStyle.CHEVRON_CROSSHAIR
+                7 -> CrosshairBaseStyle.CHARGING_CROSSHAIR
                 else -> CrosshairBaseStyle.STARBURST
             }
             val primary = colorsGod[i % colorsGod.size]

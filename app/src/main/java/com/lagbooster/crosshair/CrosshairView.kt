@@ -137,6 +137,18 @@ class CrosshairView @JvmOverloads constructor(
             CrosshairBaseStyle.ULTRA_COMPACT -> {
                 drawCrossLines(canvas, cx, cy, gap * 0.5f, length * 0.5f)
             }
+            CrosshairBaseStyle.CUSTOM_CROSSHAIR -> {
+                drawCustomCrosshair(canvas, cx, cy, gap, length, ringRadius)
+            }
+            CrosshairBaseStyle.PRO_CUSTOM_CROSSHAIR -> {
+                drawProCustomCrosshair(canvas, cx, cy, gap, length, ringRadius)
+            }
+            CrosshairBaseStyle.CHEVRON_CROSSHAIR -> {
+                drawChevronCrosshair(canvas, cx, cy, gap, length)
+            }
+            CrosshairBaseStyle.CHARGING_CROSSHAIR -> {
+                drawChargingCrosshair(canvas, cx, cy, gap, ringRadius)
+            }
         }
 
         if (preset.hasDot) {
@@ -304,6 +316,80 @@ class CrosshairView @JvmOverloads constructor(
 
         if (preset.hasOutline) canvas.drawPath(path, outlinePaint)
         canvas.drawPath(path, secondaryPaint)
+    }
+
+    private fun drawCustomCrosshair(canvas: Canvas, cx: Float, cy: Float, gap: Float, length: Float, radius: Float) {
+        drawCrossLines(canvas, cx, cy, gap, length)
+        val r = radius * 1.2f
+        val l = length * 0.4f
+        val corners = arrayOf(
+            floatArrayOf(cx - r, cy - r + l, cx - r, cy - r, cx - r + l, cy - r),
+            floatArrayOf(cx + r - l, cy - r, cx + r, cy - r, cx + r, cy - r + l),
+            floatArrayOf(cx + r, cy + r - l, cx + r, cy + r, cx + r - l, cy + r),
+            floatArrayOf(cx - r + l, cy + r, cx - r, cy + r, cx - r, cy + r - l)
+        )
+        for (c in corners) {
+            val path = Path().apply {
+                moveTo(c[0], c[1])
+                lineTo(c[2], c[3])
+                lineTo(c[4], c[5])
+            }
+            if (preset.hasOutline) canvas.drawPath(path, outlinePaint)
+            canvas.drawPath(path, secondaryPaint)
+        }
+    }
+
+    private fun drawProCustomCrosshair(canvas: Canvas, cx: Float, cy: Float, gap: Float, length: Float, radius: Float) {
+        drawCrossLines(canvas, cx, cy, gap, length)
+        val r = radius * 1.1f
+        for (i in 0 until 4) {
+            val startAngle = i * 90f + 10f
+            val sweepAngle = 70f
+            if (preset.hasOutline) {
+                canvas.drawArc(cx - r, cy - r, cx + r, cy + r, startAngle, sweepAngle, false, outlinePaint)
+            }
+            canvas.drawArc(cx - r, cy - r, cx + r, cy + r, startAngle, sweepAngle, false, secondaryPaint)
+        }
+        val outerRadius = r + length * 0.3f
+        val innerRadius = r + length * 0.1f
+        for (angle in arrayOf(0f, 90f, 180f, 270f)) {
+            val rad = Math.toRadians(angle.toDouble())
+            val x1 = (cx + innerRadius * cos(rad)).toFloat()
+            val y1 = (cy + innerRadius * sin(rad)).toFloat()
+            val x2 = (cx + outerRadius * cos(rad)).toFloat()
+            val y2 = (cy + outerRadius * sin(rad)).toFloat()
+            if (preset.hasOutline) canvas.drawLine(x1, y1, x2, y2, outlinePaint)
+            canvas.drawLine(x1, y1, x2, y2, primaryPaint)
+        }
+    }
+
+    private fun drawChevronCrosshair(canvas: Canvas, cx: Float, cy: Float, gap: Float, length: Float) {
+        drawChevrons(canvas, cx, cy, gap, length)
+        drawChevrons(canvas, cx, cy, gap + length * 0.6f, length * 0.8f)
+    }
+
+    private fun drawChargingCrosshair(canvas: Canvas, cx: Float, cy: Float, gap: Float, radius: Float) {
+        val r = radius * 1.2f
+        if (preset.hasOutline) {
+            canvas.drawArc(cx - r, cy - r, cx + r, cy + r, 135f, 270f, false, outlinePaint)
+        }
+        canvas.drawArc(cx - r, cy - r, cx + r, cy + r, 135f, 270f, false, primaryPaint)
+
+        val totalTicks = 8
+        val startA = 135f
+        val totalSweep = 270f
+        for (i in 0..totalTicks) {
+            val a = startA + i * (totalSweep / totalTicks)
+            val rad = Math.toRadians(a.toDouble())
+            val innerR = r - 3f * resources.displayMetrics.density
+            val outerR = r + 3f * resources.displayMetrics.density
+            val x1 = (cx + innerR * cos(rad)).toFloat()
+            val y1 = (cy + innerR * sin(rad)).toFloat()
+            val x2 = (cx + outerR * cos(rad)).toFloat()
+            val y2 = (cy + outerR * sin(rad)).toFloat()
+            if (preset.hasOutline) canvas.drawLine(x1, y1, x2, y2, outlinePaint)
+            canvas.drawLine(x1, y1, x2, y2, secondaryPaint)
+        }
     }
 
     private fun parseColorSafely(hex: String): Int {
