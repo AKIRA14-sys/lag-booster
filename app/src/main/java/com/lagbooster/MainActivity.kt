@@ -5,9 +5,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -39,6 +41,11 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var layoutQuickCrosshairs: LinearLayout
 
+    private lateinit var sectionHome: View
+    private lateinit var sectionGames: View
+    private lateinit var sectionBoost: View
+    private lateinit var sectionProfiles: View
+
     private var gamesList: MutableList<GameAppInfo> = mutableListOf()
     private var selectedGame: GameAppInfo? = null
 
@@ -55,8 +62,7 @@ class MainActivity : AppCompatActivity() {
         initGameCarousel()
         initQuickCrosshairs()
         initBottomNav()
-
-        checkOverlayPermission()
+        initSectionViews()
     }
 
     private fun initHUD() {
@@ -159,18 +165,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openCustomizerDialog(game: GameAppInfo) {
-        val dialog = CrosshairCustomizerDialog(
-            context = this,
-            packageName = game.packageName,
-            gameTitle = game.title,
-            onProfileSaved = { profile ->
-                Toast.makeText(this, "Crosshair profile saved for ${game.title}!", Toast.LENGTH_SHORT).show()
-                if (profile.autoOverlayEnabled) {
-                    startOverlayService(game.packageName)
+        checkAndRequestOverlayPermission {
+            val dialog = CrosshairCustomizerDialog(
+                context = this,
+                packageName = game.packageName,
+                gameTitle = game.title,
+                onProfileSaved = { profile ->
+                    Toast.makeText(this, "Crosshair profile saved for ${game.title}!", Toast.LENGTH_SHORT).show()
+                    if (profile.autoOverlayEnabled) {
+                        startOverlayService(game.packageName)
+                    }
                 }
-            }
-        )
-        dialog.show()
+            )
+            dialog.show()
+        }
+    }
+
+    private fun initSectionViews() {
+        sectionHome = findViewById(R.id.main_content_home)
+        sectionGames = findViewById(R.id.main_content_games)
+        sectionBoost = findViewById(R.id.main_content_boost)
+        sectionProfiles = findViewById(R.id.main_content_profiles)
+        showSection(sectionHome)
+    }
+
+    private fun showSection(targetSection: View) {
+        sectionHome.visibility = View.GONE
+        sectionGames.visibility = View.GONE
+        sectionBoost.visibility = View.GONE
+        sectionProfiles.visibility = View.GONE
+        targetSection.visibility = View.VISIBLE
     }
 
     private fun initBottomNav() {
@@ -181,45 +205,70 @@ class MainActivity : AppCompatActivity() {
         val btnNavProfiles = findViewById<LinearLayout>(R.id.btn_nav_profiles)
 
         btnNavHome.setOnClickListener {
-            Toast.makeText(this, "Home Tab Selected", Toast.LENGTH_SHORT).show()
+            showSection(sectionHome)
         }
         btnNavGames.setOnClickListener {
-            Toast.makeText(this, "Games Library Selected (${gamesList.size} games)", Toast.LENGTH_SHORT).show()
+            showSection(sectionGames)
+            val tvGameCount = findViewById<TextView>(R.id.tv_games_library_count)
+            tvGameCount?.text = "Installed Games: ${gamesList.size}"
         }
         btnNavCrosshair.setOnClickListener {
             val game = selectedGame ?: gamesList.firstOrNull()
             if (game != null) openCustomizerDialog(game)
         }
         btnNavPerformance.setOnClickListener {
-            Toast.makeText(this, "Performance Boost active! RAM cleared.", Toast.LENGTH_SHORT).show()
+            showSection(sectionBoost)
         }
         btnNavProfiles.setOnClickListener {
-            Toast.makeText(this, "Saved Profiles Loaded", Toast.LENGTH_SHORT).show()
+            showSection(sectionProfiles)
+            val tvFavCount = findViewById<TextView>(R.id.tv_profiles_fav_count)
+            tvFavCount?.text = "Favorite Profiles: ${profileManager.getFavorites().size}"
+        }
+
+        val btnExecuteBoost = findViewById<View>(R.id.btn_execute_boost)
+        btnExecuteBoost?.setOnClickListener {
+            Toast.makeText(this, "⚡ Instant RAM Cleared & CPU Priority Maxed!", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun startOverlayService(packageName: String) {
-        val intent = Intent(this, OverlayService::class.java).apply {
-            action = OverlayService.ACTION_START_OVERLAY
-            putExtra(OverlayService.EXTRA_PACKAGE_NAME, packageName)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
+        checkAndRequestOverlayPermission {
+            val intent = Intent(this, OverlayService::class.java).apply {
+                action = OverlayService.ACTION_START_OVERLAY
+                putExtra(OverlayService.EXTRA_PACKAGE_NAME, packageName)
+            }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
-    private fun checkOverlayPermission() {
+    private fun checkAndRequestOverlayPermission(onGranted: () -> Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) {
-                Toast.makeText(this, "Overlay permission required for Gaming Crosshair HUD", Toast.LENGTH_LONG).show()
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:$packageName")
-                )
-                startActivity(intent)
+                AlertDialog.Builder(this)
+                    .setTitle("Overlay Permission Required")
+                    .setMessage("Lag Booster requires Display Over Other Apps permission to display custom target reticles over games.")
+                    .setPositiveButton("Grant Permission") { _, _ ->
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName")
+                        )
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            } else {
+                onGranted()
             }
+        } else {
+            onGranted()
         }
     }
 

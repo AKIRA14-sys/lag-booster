@@ -224,8 +224,9 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Main Content Grid Area (Between HUD and Bottom Nav) -->
+    <!-- SECTION 1: HOME HUD CONTENT -->
     <LinearLayout
+        android:id="@+id/main_content_home"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/bottom_nav_bar"
@@ -279,7 +280,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-                    <!-- Dynamic quick crosshairs added here -->
                 </LinearLayout>
             </HorizontalScrollView>
         </LinearLayout>
@@ -306,6 +306,114 @@
                 android:textSize="10sp"
                 android:textStyle="bold" />
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- SECTION 2: GAMES LIBRARY CONTENT -->
+    <LinearLayout
+        android:id="@+id/main_content_games"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_nav_bar"
+        android:layout_below="@id/hud_top_bar"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_card_normal"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎮 GAMES LIBRARY &amp; PROFILE MANAGER"
+            android:textColor="#00E5FF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_games_library_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Installed Games: 5"
+            android:textColor="#80FFFFFF"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="All games auto-detected. Tap any game card on the home dashboard to switch active targeting profiles."
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- SECTION 3: PERFORMANCE BOOST CONTENT -->
+    <LinearLayout
+        android:id="@+id/main_content_boost"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_nav_bar"
+        android:layout_below="@id/hud_top_bar"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_card_normal"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚡ HARDWARE ACCELERATION &amp; RAM CLEANER"
+            android:textColor="#FFEA00"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btn_execute_boost"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#FF1744"
+            android:paddingHorizontal="24dp"
+            android:text="EXECUTE ULTRA BOOST"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- SECTION 4: PROFILES CONTENT -->
+    <LinearLayout
+        android:id="@+id/main_content_profiles"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_nav_bar"
+        android:layout_below="@id/hud_top_bar"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_card_normal"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📁 SAVED TARGETING PROFILES"
+            android:textColor="#00E5FF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_profiles_fav_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Favorite Profiles: 0"
+            android:textColor="#80FFFFFF"
+            android:textSize="12sp" />
     </LinearLayout>
 
 </RelativeLayout>
