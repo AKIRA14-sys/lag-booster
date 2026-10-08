@@ -10,6 +10,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.Choreographer
 import java.net.InetAddress
+import java.util.concurrent.Executors
 
 data class TelemetryData(
     val fps: Int,
@@ -23,12 +24,14 @@ data class TelemetryData(
 class TelemetryManager(private val context: Context) {
 
     private val handler = Handler(Looper.getMainLooper())
+    private val executor = Executors.newSingleThreadExecutor()
     private var isMonitoring = false
     private var onTelemetryUpdate: ((TelemetryData) -> Unit)? = null
 
     private var frameCount = 0
     private var lastFpsTimestamp = SystemClock.elapsedRealtime()
     private var currentFps = 60
+    private var lastPingMs = 24
 
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
@@ -50,20 +53,30 @@ class TelemetryManager(private val context: Context) {
         override fun run() {
             if (!isMonitoring) return
 
-            val ping = measurePing()
-            val (ramUsed, ramTotal, ramPct) = getRamInfo()
-            val temp = getBatteryTemperature()
+            // Compute ping asynchronously on background executor to avoid NetworkOnMainThreadException
+            executor.execute {
+                if (!isMonitoring) return@execute
+                val ping = measurePing()
+                lastPingMs = ping
 
-            val data = TelemetryData(
-                fps = if (currentFps > 0) currentFps else 60,
-                pingMs = ping,
-                ramUsedMb = ramUsed,
-                ramTotalMb = ramTotal,
-                ramPercentage = ramPct,
-                tempCelsius = temp
-            )
+                val (ramUsed, ramTotal, ramPct) = getRamInfo()
+                val temp = getBatteryTemperature()
 
-            onTelemetryUpdate?.invoke(data)
+                val data = TelemetryData(
+                    fps = if (currentFps > 0) currentFps else 60,
+                    pingMs = lastPingMs,
+                    ramUsedMb = ramUsed,
+                    ramTotalMb = ramTotal,
+                    ramPercentage = ramPct,
+                    tempCelsius = temp
+                )
+
+                handler.post {
+                    if (isMonitoring) {
+                        onTelemetryUpdate?.invoke(data)
+                    }
+                }
+            }
 
             handler.postDelayed(this, 1000)
         }
@@ -103,10 +116,14 @@ class TelemetryManager(private val context: Context) {
     }
 
     fun getBatteryTemperature(): Float {
-        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val batteryStatus: Intent? = context.registerReceiver(null, intentFilter)
-        val tempRaw = batteryStatus?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
-        return if (tempRaw > 0) tempRaw / 10f else 34.5f
+        return try {
+            val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+            val batteryStatus: Intent? = context.registerReceiver(null, intentFilter)
+            val tempRaw = batteryStatus?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
+            if (tempRaw > 0) tempRaw / 10f else 34.5f
+        } catch (e: Exception) {
+            34.5f
+        }
     }
 
     fun measurePing(): Int {

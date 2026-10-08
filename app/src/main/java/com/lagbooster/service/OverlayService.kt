@@ -7,10 +7,12 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -69,7 +71,21 @@ class OverlayService : Service() {
             return START_NOT_STICKY
         }
 
-        startForeground(NOTIF_ID, buildNotification())
+        try {
+            val notification = buildNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                } else {
+                    0
+                }
+                startForeground(NOTIF_ID, notification, serviceType)
+            } else {
+                startForeground(NOTIF_ID, notification)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         val pkgName = intent?.getStringExtra(EXTRA_PACKAGE_NAME)
             ?: profileManager.getLastPlayedGame()
@@ -77,13 +93,24 @@ class OverlayService : Service() {
 
         activeProfile = profileManager.getGameProfile(pkgName)
 
-        setupCrosshairOverlay()
-        setupFloatingBubble()
+        if (canDrawOverlays()) {
+            setupCrosshairOverlay()
+            setupFloatingBubble()
+        }
 
         return START_STICKY
     }
 
+    private fun canDrawOverlays(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
+
     private fun setupCrosshairOverlay() {
+        if (!canDrawOverlays()) return
         if (crosshairContainer != null) {
             updateCrosshairView()
             return
@@ -146,11 +173,16 @@ class OverlayService : Service() {
         crosshairLayoutParams?.width = sizePx
         crosshairLayoutParams?.height = sizePx
         if (crosshairContainer?.isAttachedToWindow == true) {
-            windowManager.updateViewLayout(crosshairContainer, crosshairLayoutParams)
+            try {
+                windowManager.updateViewLayout(crosshairContainer, crosshairLayoutParams)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     private fun setupFloatingBubble() {
+        if (!canDrawOverlays()) return
         if (bubbleContainer != null) return
 
         val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -204,7 +236,11 @@ class OverlayService : Service() {
                     bubbleLayoutParams?.x = initialX + (event.rawX - initialTouchX).toInt()
                     bubbleLayoutParams?.y = initialY + (event.rawY - initialTouchY).toInt()
                     if (bubbleContainer?.isAttachedToWindow == true) {
-                        windowManager.updateViewLayout(bubbleContainer, bubbleLayoutParams)
+                        try {
+                            windowManager.updateViewLayout(bubbleContainer, bubbleLayoutParams)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                     true
                 }
@@ -236,6 +272,7 @@ class OverlayService : Service() {
     }
 
     private fun showQuickControlPanel() {
+        if (!canDrawOverlays()) return
         if (panelContainer != null) return
 
         val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -323,7 +360,11 @@ class OverlayService : Service() {
     private fun hideQuickControlPanel() {
         panelContainer?.let {
             if (it.isAttachedToWindow) {
-                windowManager.removeView(it)
+                try {
+                    windowManager.removeView(it)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
         panelContainer = null
@@ -371,7 +412,7 @@ class OverlayService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         hideQuickControlPanel()
-        bubbleContainer?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
-        crosshairContainer?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
+        bubbleContainer?.let { if (it.isAttachedToWindow) try { windowManager.removeView(it) } catch (e: Exception) {} }
+        crosshairContainer?.let { if (it.isAttachedToWindow) try { windowManager.removeView(it) } catch (e: Exception) {} }
     }
 }

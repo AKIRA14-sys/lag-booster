@@ -78,17 +78,23 @@ class SharinganOcularView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+        if (w <= 0 || h <= 0) return
+
         val cx = w / 2f
         val cy = h / 2f
-        val radius = Math.min(w, h) / 2f * 0.8f
+        val radius = (Math.min(w, h) / 2f * 0.8f).coerceAtLeast(1f)
 
-        val gradient = RadialGradient(
-            cx, cy, radius,
-            intArrayOf(Color.parseColor("#FF1744"), Color.parseColor("#800000"), Color.BLACK),
-            floatArrayOf(0.0f, 0.7f, 1.0f),
-            Shader.TileMode.CLAMP
-        )
-        irisPaint.shader = gradient
+        try {
+            val gradient = RadialGradient(
+                cx, cy, radius,
+                intArrayOf(Color.parseColor("#FF1744"), Color.parseColor("#800000"), Color.BLACK),
+                floatArrayOf(0.0f, 0.7f, 1.0f),
+                Shader.TileMode.CLAMP
+            )
+            irisPaint.shader = gradient
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -98,9 +104,9 @@ class SharinganOcularView @JvmOverloads constructor(
         val cy = height / 2f
         val baseRadius = Math.min(width, height) / 2f * 0.8f
 
-        if (baseRadius <= 0) return
+        if (baseRadius <= 0f) return
 
-        // 1. Draw outer tech ring with ticks
+        // 1. Outer tech ring with ticks
         canvas.drawCircle(cx, cy, baseRadius, outerRingPaint)
         canvas.drawCircle(cx, cy, baseRadius * 0.95f, outerRingPaint)
 
@@ -113,10 +119,10 @@ class SharinganOcularView @JvmOverloads constructor(
             canvas.drawLine(x1, y1, x2, y2, tickPaint)
         }
 
-        // 2. Draw Red Iris Gradient
+        // 2. Red Iris Gradient
         canvas.drawCircle(cx, cy, baseRadius * 0.9f, irisPaint)
 
-        // 3. Draw Rotated Tomoe Ring
+        // 3. Rotated Tomoe Ring
         canvas.save()
         canvas.rotate(rotationAngle, cx, cy)
 
@@ -126,7 +132,6 @@ class SharinganOcularView @JvmOverloads constructor(
             val tx = (cx + tomoeDistance * cos(angleRad)).toFloat()
             val ty = (cy + tomoeDistance * sin(angleRad)).toFloat()
 
-            // Draw Tomoe Head & Tail
             canvas.drawCircle(tx, ty, baseRadius * 0.12f, tomoePaint)
             val path = Path().apply {
                 moveTo(tx, ty - baseRadius * 0.12f)
@@ -140,7 +145,7 @@ class SharinganOcularView @JvmOverloads constructor(
         }
         canvas.restore()
 
-        // 4. Draw Glowing Central PLAY Core
+        // 4. Glowing Central PLAY Core
         val coreRadius = baseRadius * 0.3f + corePulseRadius
         canvas.drawCircle(cx, cy, coreRadius, corePaint)
 
@@ -158,8 +163,7 @@ class SharinganOcularView @JvmOverloads constructor(
             val dist = Math.sqrt((dx * dx + dy * dy).toDouble())
 
             val baseRadius = Math.min(width, height) / 2f * 0.8f
-            if (dist <= baseRadius * 0.4f) {
-                // Trigger pulse animation
+            if (baseRadius > 0 && dist <= baseRadius * 0.4f) {
                 val pulseAnim = ValueAnimator.ofFloat(0f, 15f, 0f).apply {
                     duration = 300
                     addUpdateListener {
