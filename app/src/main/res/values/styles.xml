@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.LagBooster" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#FF1744</item>
+        <item name="colorPrimaryVariant">#D50000</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#00E5FF</item>
+        <item name="android:windowBackground">#0B0E14</item>
+    </style>
+</resources>
